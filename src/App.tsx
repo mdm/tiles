@@ -8,7 +8,7 @@ import Container from "./Container";
 const App: Component = () => {
   return (
     <div class={styles.App}>
-      <Container axis="horizontal" tiles={[]} />
+      <Container root={true} axis="horizontal" tiles={1} />
     </div>
   );
 };

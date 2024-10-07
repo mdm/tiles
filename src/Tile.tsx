@@ -10,7 +10,7 @@ type Props = {
 
 const Tile: Component<Props> = (props: Props) => {
   return (
-    <div class="flex-grow m-2 shadow-xl border rounded-md border-gray-200">
+    <div class="flex-grow m-2 shadow-lg border rounded-md border-gray-200">
       <div>
         <button
           title="Split horizontally"
