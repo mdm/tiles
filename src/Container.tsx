@@ -72,7 +72,7 @@ const Container: Component<Props> = (props: Props) => {
     <div
       class={
         "flex" +
-        (props.root ? " h-screen" : " flex-grow") +
+        (props.root ? "" : " grow shrink-0") +
         (props.axis === "horizontal" ? "" : " flex-col")
       }
     >
