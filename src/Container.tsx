@@ -15,7 +15,7 @@ const Container: Component<Props> = (props: Props) => {
   const makeTile = (
     close: (key: string) => void,
     split: (key: string, axis: Axis) => void
-  ) => {
+  ): [string, JSXElement] => {
     const newKey = crypto.randomUUID();
     return [
       newKey,
@@ -26,7 +26,9 @@ const Container: Component<Props> = (props: Props) => {
     ];
   };
 
-  const makeContainer = (close: (key: string) => void) => {
+  const makeContainer = (
+    close: (key: string) => void
+  ): [string, JSXElement] => {
     const newAxis = props.axis === "horizontal" ? "vertical" : "horizontal";
     const newKey = crypto.randomUUID();
     return [
@@ -47,6 +49,14 @@ const Container: Component<Props> = (props: Props) => {
     }
   };
 
+  const insertAfter = (tile: [string, JSXElement], key: string) => {
+    const i = tiles().findIndex((tile) => tile[0] === key);
+    if (i === -1) {
+      return [...tiles(), makeTile(close, split)];
+    }
+    return [...tiles().slice(0, i + 1), tile, ...tiles().slice(i + 1)];
+  };
+
   const split = (key: string, axis: Axis) => {
     if (axis === props.axis) {
       setTiles(
@@ -59,7 +69,7 @@ const Container: Component<Props> = (props: Props) => {
         })
       );
     } else {
-      setTiles([...tiles(), makeTile(close, split)]);
+      setTiles(insertAfter(makeTile(close, split), key));
     }
   };
 
