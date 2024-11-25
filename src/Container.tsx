@@ -1,18 +1,19 @@
-import { Component, createSignal, For, JSXElement } from "solid-js";
+import { children, Component, createSignal, For, JSXElement } from "solid-js";
 
 import Tile from "./Tile";
-import { Axis } from "./types";
+import { Axis, ContainerConfig, TileConfig } from "./types";
 import { k } from "vite/dist/node/types.d-aGj9QkWt";
 
 type Props = {
   root: boolean;
   axis: Axis;
-  tiles: number;
+  config: ContainerConfig;
   close?: () => void;
 };
 
 const Container: Component<Props> = (props: Props) => {
   const makeTile = (
+    config: TileConfig,
     close: (key: string) => void,
     split: (key: string, axis: Axis) => void
   ): [string, JSXElement] => {
@@ -22,11 +23,13 @@ const Container: Component<Props> = (props: Props) => {
       <Tile
         close={close.bind(undefined, newKey)}
         split={split.bind(undefined, newKey)}
+        {...config.props}
       />,
     ];
   };
 
   const makeContainer = (
+    config: ContainerConfig,
     close: (key: string) => void
   ): [string, JSXElement] => {
     const newAxis = props.axis === "horizontal" ? "vertical" : "horizontal";
@@ -36,7 +39,7 @@ const Container: Component<Props> = (props: Props) => {
       <Container
         root={false}
         axis={newAxis}
-        tiles={2}
+        config={config}
         close={close.bind(undefined, newKey)}
       />,
     ];
@@ -49,34 +52,49 @@ const Container: Component<Props> = (props: Props) => {
     }
   };
 
-  const insertAfter = (tile: [string, JSXElement], key: string) => {
+  const insertAfter = (key: string) => {
     const i = tiles().findIndex((tile) => tile[0] === key);
-    if (i === -1) {
-      return [...tiles(), makeTile(close, split)];
+    if (i === -1 || props.config.children[i].type === "container") {
+      return tiles();
     }
-    return [...tiles().slice(0, i + 1), tile, ...tiles().slice(i + 1)];
+    return [
+      ...tiles().slice(0, i + 1),
+      makeTile(props.config.children[i], close, split),
+      ...tiles().slice(i + 1),
+    ];
   };
 
   const split = (key: string, axis: Axis) => {
     if (axis === props.axis) {
       setTiles(
-        tiles().map((tile) => {
+        tiles().map((tile, i) => {
           if (tile[0] === key) {
-            return makeContainer(close);
+            return makeContainer(
+              {
+                type: "container",
+                children: [props.config.children[i], props.config.children[i]],
+              },
+              close
+            );
           } else {
             return tile;
           }
         })
       );
     } else {
-      setTiles(insertAfter(makeTile(close, split), key));
+      setTiles(insertAfter(key));
     }
   };
 
-  const [tiles, setTiles] = createSignal([makeTile(close, split)]);
-  for (let i = 1; i < props.tiles; i++) {
-    setTiles([...tiles(), makeTile(close, split)]);
-  }
+  const [tiles, setTiles] = createSignal(
+    props.config.children.map((config, i) => {
+      if (config.type === "container") {
+        return makeContainer(config, close);
+      } else {
+        return makeTile(config, close, split);
+      }
+    })
+  );
 
   return (
     <div

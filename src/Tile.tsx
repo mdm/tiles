@@ -1,9 +1,10 @@
 import { Component } from "solid-js";
 
 import Container from "./Container";
-import { Axis } from "./types";
+import { Axis, TileConfig } from "./types";
 
 type Props = {
+  config: TileConfig;
   close: () => void;
   split: (axis: Axis) => void;
 };
