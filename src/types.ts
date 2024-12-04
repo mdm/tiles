@@ -1,5 +1,5 @@
 import { Accessor, Setter } from "solid-js";
-import { SetStoreFunction } from "solid-js/store";
+import { SetStoreFunction, reconcile } from "solid-js/store";
 
 export type Axis = "horizontal" | "vertical";
 
@@ -36,7 +36,7 @@ const innerSplit = (
   currentAxis: Axis,
   tileKey: string,
   splitAxis: Axis
-) => {
+): TileContainerConfig => {
   const oldTileIndex = current.children.findIndex(
     (child) => child.type === "tile" && child.key === tileKey
   );
@@ -44,8 +44,9 @@ const innerSplit = (
     const oldTile = current.children[oldTileIndex];
     const newTile = { ...oldTile, key: crypto.randomUUID() };
 
+    let newChildren: (TileContainerConfig | TileConfig)[];
     if (splitAxis === currentAxis) {
-      current.children = current.children.map((child) => {
+      newChildren = current.children.map((child) => {
         if (child.type === "tile" && child.key === tileKey) {
           return {
             type: "container",
@@ -56,23 +57,27 @@ const innerSplit = (
         }
       });
     } else {
-      current.children = insertAfter(current.children, tileKey);
+      newChildren = insertAfter(current.children, tileKey);
     }
 
-    return;
+    return { ...current, children: newChildren };
   }
 
   // Tile not found. Recurse into children.
-  for (const child of current.children) {
+  const newChildren = current.children.map((child) => {
     if (child.type === "container") {
-      innerSplit(
+      return innerSplit(
         child,
         currentAxis === "horizontal" ? "vertical" : "horizontal",
         tileKey,
         splitAxis
       );
+    } else {
+      return child;
     }
-  }
+  });
+
+  return { ...current, children: newChildren };
 };
 
 export const split = (
@@ -83,26 +88,35 @@ export const split = (
   tileAxis: Axis
 ) => {
   console.log("enter split", model, rootAxis, tileKey, tileAxis);
-  innerSplit(model, rootAxis, tileKey, tileAxis);
-  setModel(model);
+  setModel(innerSplit(model, rootAxis, tileKey, tileAxis));
   console.log("leave split", model, rootAxis, tileKey, tileAxis);
 };
 
-const innerClose = (current: TileContainerConfig, tileKey: string) => {
+const innerClose = (
+  current: TileContainerConfig,
+  tileKey: string
+): TileContainerConfig => {
   const i = current.children.findIndex(
     (child) => child.type === "tile" && child.key === tileKey
   );
   if (i !== -1) {
-    current.children.splice(i, 1);
-    return;
+    const newChildren = current.children.filter(
+      (child) => child.type !== "tile" || child.key !== tileKey
+    );
+
+    return { ...current, children: newChildren };
   }
 
   // Tile not found. Recurse into children.
-  for (const child of current.children) {
+  const newChildren = current.children.map((child) => {
     if (child.type === "container") {
-      innerClose(child, tileKey);
+      return innerClose(child, tileKey);
+    } else {
+      return child;
     }
-  }
+  });
+
+  return { ...current, children: newChildren };
 };
 
 export const close = (
@@ -111,7 +125,6 @@ export const close = (
   tileKey: string
 ) => {
   console.log("enter close", model, tileKey);
-  innerClose(model, tileKey);
-  setModel(model);
+  setModel(innerClose(model, tileKey));
   console.log("leave close", model, tileKey);
 };
