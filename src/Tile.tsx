@@ -1,4 +1,4 @@
-import { Component } from "solid-js";
+import { Component, createSignal } from "solid-js";
 
 import { Axis, TileConfig } from "./types";
 
@@ -8,9 +8,70 @@ type Props = {
   close: (tileKey: string) => void;
 };
 
+enum DropZone {
+  None,
+  Top,
+  Right,
+  Bottom,
+  Left,
+}
+
 const Tile: Component<Props> = (props: Props) => {
+  const [activeDropZone, setActiveDropZone] = createSignal<DropZone>(DropZone.None);
+
+  const handleDragStart = (event: DragEvent) => {
+    console.log("drag start", props.model.key);
+    event.dataTransfer!.setData("application/json", JSON.stringify(props.model));
+    event.dataTransfer!.effectAllowed = "move";
+  };
+
+  const calculateDropZone = (event: DragEvent): DropZone => {
+    const targetTop = (event.currentTarget! as Element).getBoundingClientRect().top;
+    const targetRight = (event.currentTarget! as Element).getBoundingClientRect().right;
+    const targetBottom = (event.currentTarget! as Element).getBoundingClientRect().bottom;
+    const targetLeft = (event.currentTarget! as Element).getBoundingClientRect().left;
+
+    const targetHalfWidth = (targetRight - targetLeft) / 2;
+    const targetHalfHeight = (targetBottom - targetTop) / 2;
+
+    const centerX = targetLeft + targetHalfWidth;
+    const centerY = targetTop + targetHalfHeight;
+
+    const distanceX = event.clientX - centerX;
+    const distanceY = event.clientY - centerY;
+
+    console.log(distanceX, distanceY);
+
+    if (distanceX === 0 || Math.abs(distanceY / distanceX) > targetHalfHeight / targetHalfWidth) {
+      if (distanceY <= 0) {
+        console.log("top", props.model.key);
+        return DropZone.Top;
+      } else {
+
+        console.log("bottom", props.model.key);
+        return DropZone.Bottom;
+      }
+    } else {
+      if (distanceX <= 0) {
+        console.log("left", props.model.key);
+        return DropZone.Left;
+      } else {
+
+        console.log("right", props.model.key);
+        return DropZone.Right;
+      }
+    }
+  };
+
+  const handleDragOver = (event: DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer!.dropEffect = "move";
+
+    setActiveDropZone(calculateDropZone(event));
+  };
+
   return (
-    <div class="grow shrink-0 m-2 shadow-lg border rounded-md border-gray-200">
+    <div class="grow shrink-0 m-2 shadow-lg border rounded-md border-gray-200" draggable="true" ondragstart={handleDragStart} ondragover={handleDragOver}>
       <div>
         <button
           title="Split horizontally"
