@@ -17,12 +17,14 @@ enum DropZone {
 }
 
 const Tile: Component<Props> = (props: Props) => {
+  const [dragging, setDragging] = createSignal(false);
   const [activeDropZone, setActiveDropZone] = createSignal<DropZone>(DropZone.None);
 
   const handleDragStart = (event: DragEvent) => {
     console.log("drag start", props.model.key);
-    event.dataTransfer!.setData("application/json", JSON.stringify(props.model));
+    event.dataTransfer!.setData("text/plain", props.model.key);
     event.dataTransfer!.effectAllowed = "move";
+    setDragging(true);
   };
 
   const calculateDropZone = (event: DragEvent): DropZone => {
@@ -66,7 +68,6 @@ const Tile: Component<Props> = (props: Props) => {
   const handleDragOver = (event: DragEvent) => {
     event.preventDefault();
     event.dataTransfer!.dropEffect = "move";
-
     setActiveDropZone(calculateDropZone(event));
   };
 
@@ -75,12 +76,18 @@ const Tile: Component<Props> = (props: Props) => {
   };
 
   const handleDrop = (_event: DragEvent) => {
+    // TODO: move the tile
+
     setActiveDropZone(DropZone.None);
   };
 
   return (
     <div
-      class={"grow shrink-0 m-2 flex" + (activeDropZone() === DropZone.Left || activeDropZone() === DropZone.Right ? "" : " flex-col")}
+      class={
+        "grow shrink-0 m-2 flex"
+        + (activeDropZone() === DropZone.Left || activeDropZone() === DropZone.Right ? "" : " flex-col")
+        + (dragging() ? " hidden" : "")
+      }
       draggable="true"
       ondragstart={handleDragStart}
       ondragover={handleDragOver}
