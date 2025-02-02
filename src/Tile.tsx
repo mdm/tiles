@@ -70,7 +70,10 @@ const Tile: Component<Props> = (props: Props) => {
   const handleDragOver = (event: DragEvent) => {
     event.preventDefault();
     event.dataTransfer!.dropEffect = "move";
-    setActiveDropZone(calculateDropZone(event));
+    const newDropZone = calculateDropZone(event);
+    if (newDropZone !== activeDropZone()) {
+      setActiveDropZone(newDropZone);
+    }
   };
 
   const handleDragLeave = (_event: DragEvent) => {
@@ -86,20 +89,24 @@ const Tile: Component<Props> = (props: Props) => {
   return (
     <div
       class={
-        "grow shrink-0 m-2 flex"
+        "grow shrink-0 flex"
         + (activeDropZone() === DropZone.Left || activeDropZone() === DropZone.Right ? "" : " flex-col")
         + (dragging() ? " hidden" : "")
       }
-      draggable="true"
-      ondragstart={handleDragStart}
       ondragover={handleDragOver}
-      ondragleave={handleDragLeave}
       ondrop={handleDrop}
     >
       <Show when={activeDropZone() === DropZone.Top || activeDropZone() === DropZone.Left}>
-        <div class="border border-red-600"></div>
+        <div
+          class="min-h-8 grow m-2 bg-gray-400 border rounded-md border-gray-400"
+          ondragleave={handleDragLeave}
+        ></div>
       </Show>
-      <div class="h-full grow shadow-lg border rounded-md border-gray-200">
+      <div
+        class="h-full grow m-2 shadow-lg border rounded-md border-gray-200"
+        draggable="true"
+        ondragstart={handleDragStart}
+      >
         <div>
           <button
             title="Split horizontally"
@@ -140,7 +147,10 @@ const Tile: Component<Props> = (props: Props) => {
         </div>
       </div>
       <Show when={activeDropZone() === DropZone.Bottom || activeDropZone() === DropZone.Right}>
-        <div class="border border-red-600"></div>
+        <div
+          class="min-h-8 grow m-2 bg-gray-400 border rounded-md border-gray-400"
+          ondragleave={handleDragLeave}
+        ></div>
       </Show>
     </div>
   );
