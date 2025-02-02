@@ -1,4 +1,4 @@
-import { Component, For, Show } from "solid-js";
+import { Component, For, Show, createSignal } from "solid-js";
 
 import Tile from "./Tile";
 import { Axis, TileContainerConfig, TileConfig } from "./types";
@@ -12,12 +12,21 @@ type Props = {
 };
 
 const Container: Component<Props> = (props: Props) => {
+  const [hidden, setHidden] = createSignal(false);
+
+  const hideEmptyContainer = () => {
+    if (props.model.children.length === 1) {
+      setHidden(true);
+    }
+  }
+
   return (
     <div
       class={
         "flex" +
         (props.root ? "" : " grow shrink-0") +
-        (props.axis === "horizontal" ? "" : " flex-col")
+        (props.axis === "horizontal" ? "" : " flex-col") +
+        (hidden() ? " hidden" : "")
       }
     >
       <For each={props.model.children}>
@@ -28,6 +37,7 @@ const Container: Component<Props> = (props: Props) => {
                 model={child as TileConfig}
                 close={props.close}
                 split={props.split}
+                hideEmptyContainer={hideEmptyContainer}
               />
             </Show>
             <Show when={child.type === "container"}>

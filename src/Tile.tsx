@@ -6,6 +6,7 @@ type Props = {
   model: TileConfig;
   split: (tileKey: string, splitAxis: Axis) => void;
   close: (tileKey: string) => void;
+  hideEmptyContainer: () => void;
 };
 
 enum DropZone {
@@ -25,6 +26,7 @@ const Tile: Component<Props> = (props: Props) => {
     event.dataTransfer!.setData("text/plain", props.model.key);
     event.dataTransfer!.effectAllowed = "move";
     setDragging(true);
+    props.hideEmptyContainer();
   };
 
   const calculateDropZone = (event: DragEvent): DropZone => {
