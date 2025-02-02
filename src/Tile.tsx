@@ -1,6 +1,6 @@
 import { Component, createSignal, Show } from "solid-js";
 
-import { Axis, TileConfig } from "./types";
+import { Axis, TileConfig, DropZone } from "./types";
 
 type Props = {
   model: TileConfig;
@@ -8,14 +8,6 @@ type Props = {
   close: (tileKey: string) => void;
   hideEmptyContainer: () => void;
 };
-
-enum DropZone {
-  None,
-  Top,
-  Right,
-  Bottom,
-  Left,
-}
 
 const Tile: Component<Props> = (props: Props) => {
   const [dragging, setDragging] = createSignal(false);

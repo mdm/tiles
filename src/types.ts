@@ -3,6 +3,14 @@ import { SetStoreFunction, reconcile } from "solid-js/store";
 
 export type Axis = "horizontal" | "vertical";
 
+export enum DropZone {
+  None,
+  Top,
+  Right,
+  Bottom,
+  Left,
+}
+
 export type TileContainerConfig = {
   type: "container";
   children: (TileContainerConfig | TileConfig)[];
@@ -127,4 +135,44 @@ export const close = (
   console.log("enter close", model, tileKey);
   setModel(innerClose(model, tileKey));
   console.log("leave close", model, tileKey);
+};
+
+const findTileConfig = (
+  current: TileContainerConfig,
+  tileKey: string
+): TileConfig | undefined => {
+  const tileConfig = current.children.find(
+    (child) => child.type === "tile" && child.key === tileKey
+  );
+
+  if (tileConfig) {
+    // Cast is safe because we just checked the type above
+    return tileConfig as TileConfig;
+  }
+
+
+  for (const child of current.children) {
+    if (child.type !== "container") {
+      continue;
+    }
+
+    const tileConfig = findTileConfig(child, tileKey);
+    if (tileConfig) {
+      return tileConfig;
+    }
+  };
+
+  return undefined;
+}
+
+export const move = (
+  model: TileContainerConfig,
+  setModel: SetStoreFunction<TileContainerConfig>,
+  sourceKey: string,
+  destinationKey: string,
+  dropZone: DropZone,
+
+) => {
+  const tileConfig = findTileConfig(model, sourceKey);
+  close(model, setModel, sourceKey);
 };
