@@ -114,7 +114,7 @@ const innerClose = (
     } else {
       return child;
     }
-  });
+  }).filter((child) => child.type !== "container" || child.children.length > 0);
 
   return { ...current, children: newChildren };
 };
