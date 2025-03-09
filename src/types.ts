@@ -175,7 +175,11 @@ export const move = (
 
 ) => {
   const tileConfig = findTileConfig(model, sourceKey);
-  close(model, setModel, sourceKey);
+  if (!tileConfig) {
+    return;
+  }
+  model = innerClose(model, sourceKey);
+  setModel(innerInsertRelative(model, tileConfig, destinationKey, dropZone));
 };
 
 const findGhostKey = (
@@ -196,8 +200,9 @@ const findGhostKey = (
   return undefined;
 };
 
-const innerInsertGhost = (
+const innerInsertRelative = (
   model: TileContainerConfig,
+  tileConfig: TileConfig,
   tileKey: string,
   dropZone: DropZone
 ): TileContainerConfig => {
@@ -212,8 +217,15 @@ export const insertGhost = (
 ) => {
   const ghostKey = findGhostKey(model);
   while (ghostKey) {
-    innerClose(model, ghostKey);
+    model = innerClose(model, ghostKey);
   }
 
-  setModel(innerInsertGhost(model, tileKey, dropZone));
+  const ghostTile: TileConfig = {
+    type: "tile",
+    key: crypto.randomUUID(),
+    ghost: true,
+    props: {},
+  };
+
+  setModel(innerInsertRelative(model, ghostTile, tileKey, dropZone));
 }
