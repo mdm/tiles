@@ -19,6 +19,7 @@ export type TileContainerConfig = {
 export type TileConfig = {
   type: "tile";
   key: string;
+  ghost: boolean;
   props: any; // TODO: give this a better type
 };
 
@@ -176,3 +177,43 @@ export const move = (
   const tileConfig = findTileConfig(model, sourceKey);
   close(model, setModel, sourceKey);
 };
+
+const findGhostKey = (
+  current: TileContainerConfig,
+): string | undefined => {
+  for (const child of current.children) {
+    if (child.type === "container") {
+      const result = findGhostKey(child);
+      if (result) {
+        return result;
+      }
+    }
+    if (child.type === "tile" && child.ghost) {
+      return child.key;
+    }
+  }
+
+  return undefined;
+};
+
+const innerInsertGhost = (
+  model: TileContainerConfig,
+  tileKey: string,
+  dropZone: DropZone
+): TileContainerConfig => {
+  return model;
+}
+
+export const insertGhost = (
+  model: TileContainerConfig,
+  setModel: SetStoreFunction<TileContainerConfig>,
+  tileKey: string,
+  dropZone: DropZone
+) => {
+  const ghostKey = findGhostKey(model);
+  while (ghostKey) {
+    innerClose(model, ghostKey);
+  }
+
+  setModel(innerInsertGhost(model, tileKey, dropZone));
+}
