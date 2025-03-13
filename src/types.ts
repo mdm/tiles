@@ -94,11 +94,11 @@ export const split = (
   setModel: SetStoreFunction<TileContainerConfig>,
   rootAxis: Axis,
   tileKey: string,
-  tileAxis: Axis
+  splitAxis: Axis
 ) => {
-  console.log("enter split", model, rootAxis, tileKey, tileAxis);
-  setModel(innerSplit(model, rootAxis, tileKey, tileAxis));
-  console.log("leave split", model, rootAxis, tileKey, tileAxis);
+  console.log("enter split", model, rootAxis, tileKey, splitAxis);
+  setModel(innerSplit(model, rootAxis, tileKey, splitAxis));
+  console.log("leave split", model, rootAxis, tileKey, splitAxis);
 };
 
 const innerClose = (
@@ -166,20 +166,41 @@ const findTileConfig = (
   return undefined;
 }
 
-export const move = (
+const innerReplaceGost = (
+  current: TileContainerConfig,
+  tileConfig: TileConfig,
+  ghostKey: string): TileContainerConfig => {
+  const newChildren = current.children.map((child) => {
+    if (child.type === "container") {
+      return innerReplaceGost(child, tileConfig, ghostKey);
+    } else if (child.key === ghostKey) {
+      return tileConfig;
+
+    } else {
+      return child;
+    }
+  });
+
+  return { ...current, children: newChildren };
+};
+
+export const replaceGhost = (
   model: TileContainerConfig,
   setModel: SetStoreFunction<TileContainerConfig>,
   sourceKey: string,
-  destinationKey: string,
-  dropZone: DropZone,
-
 ) => {
   const tileConfig = findTileConfig(model, sourceKey);
   if (!tileConfig) {
     return;
   }
   model = innerClose(model, sourceKey);
-  setModel(innerInsertRelative(model, tileConfig, destinationKey, dropZone));
+
+  const ghostKey = findGhostKey(model);
+  if (!ghostKey) {
+    return;
+  }
+
+  setModel(innerReplaceGost(model, tileConfig, ghostKey));
 };
 
 const findGhostKey = (
@@ -200,24 +221,68 @@ const findGhostKey = (
   return undefined;
 };
 
-const innerInsertRelative = (
-  model: TileContainerConfig,
-  tileConfig: TileConfig,
+const innerInsertGhost = (
+  current: TileContainerConfig,
+  currentAxis: Axis,
+  ghostConfig: TileConfig,
   tileKey: string,
   dropZone: DropZone
 ): TileContainerConfig => {
-  return model;
+  const newChildren: (TileContainerConfig | TileConfig)[] = current.children.map((child) => {
+    if (child.type === "container") {
+      const childAxis = currentAxis === "horizontal" ? "vertical" : "horizontal";
+      return innerInsertGhost(child, childAxis, ghostConfig, tileKey, dropZone);
+    } else if (child.key === tileKey) {
+      if (currentAxis === "horizontal") {
+        switch (dropZone) {
+          case DropZone.Top:
+            return {
+              type: "container",
+              children: [ghostConfig, child],
+            };
+          case DropZone.Bottom:
+            return {
+              type: "container",
+              children: [child, ghostConfig],
+            };
+          default:
+            return child;
+        }
+      } else {
+        switch (dropZone) {
+          case DropZone.Left:
+            return {
+              type: "container",
+              children: [ghostConfig, child],
+            };
+          case DropZone.Right:
+            return {
+              type: "container",
+              children: [child, ghostConfig],
+            };
+          default:
+            return child;
+        }
+      }
+    } else {
+      return child;
+    }
+  });
+
+  return { ...current, children: newChildren };
 }
 
 export const insertGhost = (
   model: TileContainerConfig,
   setModel: SetStoreFunction<TileContainerConfig>,
+  rootAxis: Axis,
   tileKey: string,
   dropZone: DropZone
 ) => {
-  const ghostKey = findGhostKey(model);
+  let ghostKey = findGhostKey(model);
   while (ghostKey) {
     model = innerClose(model, ghostKey);
+    ghostKey = findGhostKey(model);
   }
 
   const ghostTile: TileConfig = {
@@ -227,5 +292,5 @@ export const insertGhost = (
     props: {},
   };
 
-  setModel(innerInsertRelative(model, ghostTile, tileKey, dropZone));
+  setModel(innerInsertGhost(model, rootAxis, ghostTile, tileKey, dropZone));
 }

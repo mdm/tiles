@@ -1,7 +1,7 @@
 import { Component, For, Show, createSignal } from "solid-js";
 
 import Tile from "./Tile";
-import { Axis, TileContainerConfig, TileConfig } from "./types";
+import { Axis, TileContainerConfig, TileConfig, DropZone } from "./types";
 
 type Props = {
   root: boolean;
@@ -9,6 +9,8 @@ type Props = {
   model: TileContainerConfig;
   split: (tileKey: string, splitAxis: Axis) => void;
   close: (tileKey: string) => void;
+  insertGhost: (tileKey: string, dropZone: DropZone) => void;
+  replaceGhost: (sourceKey: string) => void;
 };
 
 const Container: Component<Props> = (props: Props) => {
@@ -38,6 +40,8 @@ const Container: Component<Props> = (props: Props) => {
                 close={props.close}
                 split={props.split}
                 hideEmptyContainer={hideEmptyContainer}
+                insertGhost={props.insertGhost}
+                replaceGhost={props.replaceGhost}
               />
             </Show>
             <Show when={child.type === "container"}>
@@ -47,6 +51,8 @@ const Container: Component<Props> = (props: Props) => {
                 model={child as TileContainerConfig}
                 close={props.close}
                 split={props.split}
+                insertGhost={props.insertGhost}
+                replaceGhost={props.replaceGhost}
               />
             </Show>
           </>
