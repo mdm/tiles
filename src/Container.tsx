@@ -10,7 +10,8 @@ type Props = {
   split: (tileKey: string, splitAxis: Axis) => void;
   close: (tileKey: string) => void;
   insertGhost: (tileKey: string, dropZone: DropZone) => void;
-  replaceGhost: (sourceKey: string) => void;
+  replaceGhost: (tileKey: string) => void;
+  hideTile: (tileKey: string) => void;
 };
 
 const Container: Component<Props> = (props: Props) => {
@@ -42,6 +43,7 @@ const Container: Component<Props> = (props: Props) => {
                 hideEmptyContainer={hideEmptyContainer}
                 insertGhost={props.insertGhost}
                 replaceGhost={props.replaceGhost}
+                hideTile={props.hideTile}
               />
             </Show>
             <Show when={child.type === "container"}>
@@ -53,6 +55,7 @@ const Container: Component<Props> = (props: Props) => {
                 split={props.split}
                 insertGhost={props.insertGhost}
                 replaceGhost={props.replaceGhost}
+                hideTile={props.hideTile}
               />
             </Show>
           </>

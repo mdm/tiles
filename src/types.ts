@@ -20,6 +20,7 @@ export type TileConfig = {
   type: "tile";
   key: string;
   ghost: boolean;
+  hidden: boolean;
   props: any; // TODO: give this a better type
 };
 
@@ -166,6 +167,38 @@ const findTileConfig = (
   return undefined;
 }
 
+const innerHideTile = (
+  current: TileContainerConfig,
+  tileKey: string,
+): TileContainerConfig => {
+  const newChildren = current.children.map((child) => {
+    if (child.type === "container") {
+      return innerHideTile(child, tileKey);
+    } else if (child.key === tileKey) {
+      return { ...child, hidden: true };
+    } else {
+      return child;
+    }
+  });
+
+  return { ...current, children: newChildren };
+};
+
+export const hideTile = (
+  model: TileContainerConfig,
+  setModel: SetStoreFunction<TileContainerConfig>,
+  tileKey: string,
+) => {
+  const tileConfig = findTileConfig(model, tileKey);
+  if (!tileConfig) {
+    return;
+  }
+
+  tileConfig.hidden = true;
+
+  // setModel(innerHideTile(model, tileKey));
+};
+
 const innerReplaceGost = (
   current: TileContainerConfig,
   tileConfig: TileConfig,
@@ -187,20 +220,19 @@ const innerReplaceGost = (
 export const replaceGhost = (
   model: TileContainerConfig,
   setModel: SetStoreFunction<TileContainerConfig>,
-  sourceKey: string,
+  tileKey: string,
 ) => {
-  const tileConfig = findTileConfig(model, sourceKey);
+  const tileConfig = findTileConfig(model, tileKey);
   if (!tileConfig) {
     return;
   }
-  model = innerClose(model, sourceKey);
 
   const ghostKey = findGhostKey(model);
   if (!ghostKey) {
     return;
   }
 
-  setModel(innerReplaceGost(model, tileConfig, ghostKey));
+  setModel(innerReplaceGost(model, { ...tileConfig, hidden: false }, ghostKey));
 };
 
 const findGhostKey = (
@@ -289,6 +321,7 @@ export const insertGhost = (
     type: "tile",
     key: crypto.randomUUID(),
     ghost: true,
+    hidden: false,
     props: {},
   };
 

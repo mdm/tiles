@@ -1,4 +1,4 @@
-import { Component, createSignal, Match, Show, Switch } from "solid-js";
+import { Component, createSignal, Match, Switch } from "solid-js";
 
 import { Axis, TileConfig, DropZone } from "./types";
 
@@ -8,17 +8,19 @@ type Props = {
   close: (tileKey: string) => void;
   hideEmptyContainer: () => void;
   insertGhost: (tileKey: string, dropZone: DropZone) => void;
-  replaceGhost: (sourceKey: string) => void;
+  replaceGhost: (tileKey: string) => void;
+  hideTile: (tileKey: string) => void;
 };
 
 const Tile: Component<Props> = (props: Props) => {
-  const [dragging, setDragging] = createSignal(false);
+  const [dragging, setDragging] = createSignal(props.model.hidden);
   const [activeDropZone, setActiveDropZone] = createSignal<DropZone>(DropZone.None);
 
   const handleDragStart = (event: DragEvent) => {
     console.log("drag start", props.model.key);
     event.dataTransfer!.setData("text/plain", props.model.key);
     event.dataTransfer!.effectAllowed = "move";
+    props.hideTile(props.model.key);
     setDragging(true);
     props.hideEmptyContainer();
   };
@@ -141,6 +143,7 @@ const Tile: Component<Props> = (props: Props) => {
                   <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
                 </svg>
               </button>
+              <p>{props.model.key}: {props.model.hidden ? "hidden" : "visible"}</p>
             </div>
           </div>
         </div>
