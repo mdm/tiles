@@ -1,17 +1,19 @@
-import { Component, createSignal, Show } from "solid-js";
+import { Accessor, Component, createSignal, Match, Setter, Show, Switch } from "solid-js";
 
-import { Axis, TileConfig, DropZone } from "./types";
+import { Axis, TileConfig, DropZone, GhostConfig } from "./types";
 
 type Props = {
   model: TileConfig;
   split: (tileKey: string, splitAxis: Axis) => void;
   close: (tileKey: string) => void;
+  ghost: Accessor<GhostConfig | null>;
+  setGhost: Setter<GhostConfig | null>;
+  move: (sourceKey: string, destinationKey: string, dropZone: DropZone) => void;
   hideEmptyContainer: () => void;
 };
 
 const Tile: Component<Props> = (props: Props) => {
   const [dragging, setDragging] = createSignal(false);
-  const [activeDropZone, setActiveDropZone] = createSignal<DropZone>(DropZone.None);
 
   const handleDragStart = (event: DragEvent) => {
     console.log("drag start", props.model.key);
@@ -63,39 +65,36 @@ const Tile: Component<Props> = (props: Props) => {
     event.preventDefault();
     event.dataTransfer!.dropEffect = "move";
     const newDropZone = calculateDropZone(event);
-    if (newDropZone !== activeDropZone()) {
-      setActiveDropZone(newDropZone);
+    if (props.model.key !== props.ghost()?.tileKey || newDropZone !== props.ghost()?.dropZone) {
+      props.setGhost({ tileKey: props.model.key, dropZone: newDropZone });
     }
   };
 
-  const handleDragLeave = (_event: DragEvent) => {
-    setActiveDropZone(DropZone.None);
-  };
+  const handleDrop = (event: DragEvent) => {
+    console.log("drop on tile");
+    if (!props.ghost()) {
+      return;
+    }
 
-  const handleDrop = (_event: DragEvent) => {
-    // TODO: move the tile
+    const sourceKey = event.dataTransfer!.getData("text/plain");
+    const destinationKey = props.ghost()!.tileKey;
+    const dropZone = props.ghost()!.dropZone;
+    props.setGhost(null);
 
-    setActiveDropZone(DropZone.None);
+    props.move(sourceKey, destinationKey, dropZone);
   };
 
   return (
     <div
       class={
-        "grow shrink-0 flex"
-        + (activeDropZone() === DropZone.Left || activeDropZone() === DropZone.Right ? "" : " flex-col")
+        "grow shrink-0 border border-red-600"
         + (dragging() ? " hidden" : "")
       }
       ondragover={handleDragOver}
       ondrop={handleDrop}
     >
-      <Show when={activeDropZone() === DropZone.Top || activeDropZone() === DropZone.Left}>
-        <div
-          class="min-h-8 grow m-2 bg-gray-400 border rounded-md border-gray-400"
-          ondragleave={handleDragLeave}
-        ></div>
-      </Show>
       <div
-        class="h-full grow m-2 shadow-lg border rounded-md border-gray-200"
+        class="m-2 shadow-lg border rounded-md border-gray-200"
         draggable="true"
         ondragstart={handleDragStart}
       >
@@ -136,14 +135,9 @@ const Tile: Component<Props> = (props: Props) => {
               <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
             </svg>
           </button>
+          <p>{props.model.key}</p>
         </div>
       </div>
-      <Show when={activeDropZone() === DropZone.Bottom || activeDropZone() === DropZone.Right}>
-        <div
-          class="min-h-8 grow m-2 bg-gray-400 border rounded-md border-gray-400"
-          ondragleave={handleDragLeave}
-        ></div>
-      </Show>
     </div>
   );
 };

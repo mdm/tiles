@@ -4,12 +4,16 @@ import { SetStoreFunction, reconcile } from "solid-js/store";
 export type Axis = "horizontal" | "vertical";
 
 export enum DropZone {
-  None,
   Top,
   Right,
   Bottom,
   Left,
 }
+
+export type GhostConfig = {
+  tileKey: string;
+  dropZone: DropZone;
+};
 
 export type TileContainerConfig = {
   type: "container";
@@ -165,14 +169,75 @@ const findTileConfig = (
   return undefined;
 }
 
+const insertRelative = (
+  current: TileContainerConfig,
+  currentAxis: Axis,
+  tileConfig: TileConfig,
+  destinationKey: string,
+  dropZone: DropZone,
+): TileContainerConfig => {
+  // TODO: Improve typing below
+  const newChildren: (TileContainerConfig | TileConfig)[] = current.children.flatMap((child) => {
+    if (child.type === "container") {
+      return [insertRelative(child, currentAxis === "horizontal" ? "vertical" : "horizontal", tileConfig, destinationKey, dropZone)];
+    } else if (child.key === destinationKey) {
+      if (currentAxis === "horizontal") {
+        switch (dropZone) {
+          case DropZone.Top:
+            console.log("horizontal", "top");
+            return { type: "container", children: [tileConfig, child] } as TileContainerConfig;
+          case DropZone.Bottom:
+            console.log("horizontal", "bottom");
+            return { type: "container", children: [child, tileConfig] } as TileContainerConfig;
+          case DropZone.Left:
+            console.log("horizontal", "left");
+            return [tileConfig, child] as (TileContainerConfig | TileConfig)[];
+          case DropZone.Right:
+            console.log("horizontal", "right");
+            // TODO: not working
+            return [child, tileConfig] as (TileContainerConfig | TileConfig)[];
+        }
+      } else {
+        switch (dropZone) {
+          case DropZone.Top:
+            console.log("vertical", "top");
+            return [tileConfig, child] as (TileContainerConfig | TileConfig)[];
+          case DropZone.Bottom:
+            console.log("vertical", "bottom");
+            return [child, tileConfig] as (TileContainerConfig | TileConfig)[];
+          case DropZone.Left:
+            console.log("vertical", "left");
+            return { type: "container", children: [tileConfig, child] } as TileContainerConfig;
+          case DropZone.Right:
+            console.log("vertical", "right");
+            return { type: "container", children: [child, tileConfig] } as TileContainerConfig;
+        }
+      }
+      return [child];
+    } else {
+      return [child];
+    }
+  });
+
+  return { ...current, children: newChildren };
+};
+
 export const move = (
   model: TileContainerConfig,
   setModel: SetStoreFunction<TileContainerConfig>,
+  rootAxis: Axis,
   sourceKey: string,
   destinationKey: string,
   dropZone: DropZone,
 
 ) => {
   const tileConfig = findTileConfig(model, sourceKey);
-  close(model, setModel, sourceKey);
+  if (!tileConfig) {
+    return;
+  }
+
+  model = innerClose(model, sourceKey);
+  model = insertRelative(model, rootAxis, tileConfig, destinationKey, dropZone);
+  console.log("move", model);
+  setModel(model);
 };

@@ -1,12 +1,13 @@
-import { type Component } from "solid-js";
+import { createSignal, type Component } from "solid-js";
 import { createStore } from "solid-js/store";
 
 import styles from "./App.module.css";
 
 import Container from "./Container";
-import { TileContainerConfig, split, close } from "./types";
+import { TileContainerConfig, split, close, GhostConfig, move } from "./types";
 
 const App: Component = () => {
+  const [ghost, setGhost] = createSignal<GhostConfig | null>(null)
   const [model, setModel] = createStore<TileContainerConfig>({
     type: "container",
     children: [
@@ -24,6 +25,7 @@ const App: Component = () => {
 
   const boundSplit = split.bind(undefined, model, setModel, "horizontal");
   const boundClose = close.bind(undefined, model, setModel);
+  const boundMove = move.bind(undefined, model, setModel, "horizontal");
 
   return (
     <div class={styles.App}>
@@ -33,6 +35,9 @@ const App: Component = () => {
         model={model}
         split={boundSplit}
         close={boundClose}
+        ghost={ghost}
+        setGhost={setGhost}
+        move={boundMove}
       />
     </div>
   );
